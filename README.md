@@ -1,4 +1,5 @@
-# Titanic
+#
+Titanic
 Personal Project
 # Titanic Survival Analysis: Passenger Class, Gender, and Age Effects on Survival 🚢
 
@@ -6,7 +7,7 @@ Personal Project
 
 This project explores the survival rates of **Titanic passengers**, analyzing the impact of **passenger class, gender, fare, and age** on survival. Using statistical analysis and data visualizations, we uncover key patterns in survival probabilities.
 
-![Survival Rate by Class](imgs/survival_rate_by_class.png)
+![Survival Rate by Class](imgs/survival_rate_fare_range.png)
 
 ## Features
 
