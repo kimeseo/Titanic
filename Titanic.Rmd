@@ -1,0 +1,358 @@
+---
+title: "Navigating the Relationship Between Passenger Class and Survival Rate (+Age/Gender) on the Titanic"
+authors: "Pelin, Katelyn, Elena, Kiet"
+output: html_document
+---
+
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
+library(tidyverse)
+
+```
+
+> Created by: Pelin, Katelyn, Elena, and Kiet
+
+### Introduction
+
+The sinking of the Titanic remains one of the most tragic maritime disasters in history, captivating the imagination of people worldwide for decades. Motivated by a blend of personal curiosity and historical significance, this analysis delves into the Titanic dataset ^[https://github.com/awesomedata/awesome-public-datasets/tree/master/Datasets] to explore the factors influencing survival rates among its passengers. Our intrigue is fueled by various facets, from Leonardo DiCaprio's portrayal of Jack Dawson to the broader socio-economic dynamics of the era. Through this exploration, we seek to unravel the intertwined narratives of class, age, and gender, and their roles in shaping survival outcomes on that fateful night.
+
+Our study revolves around three key inference-style questions:
+
+1. Inference on single population proportions: Is there evidence to suggest that the proportion of survivors differs between passenger classes?
+
+2. Inference on a single population mean: What is the true mean age of survivors aboard the Titanic, and is there evidence to suggest it differs from the mean age of non-survivors?
+
+3. Comparing two population proportions: Are the proportions of male and female survivors equal, or is there evidence of a significant difference in survival rates based on gender?
+
+By scrutinizing these variables through statistical inference, we aim to uncover deeper insights into the human dimension of the Titanic tragedy.
+
+Through meticulous examination of the Titanic dataset, this study contends that women, younger individuals, and those in higher passenger classes were more likely to survive the disaster, underlining the profound impact of socio-economic status and demographic characteristics on survival outcomes.
+
+### Background 
+
+The dataset "titanic.csv" provides information on passengers of the RMS Titanic, which tragically sank in 1912. This dataset, comprised of data on 891 out of more than 2,000 passengers, offers valuable insights into the demographics and socio-economic factors that may have influenced survival outcomes. Compiled from passenger lists, boarding records, and other historical documents, it enables researchers to delve into survival patterns and the impact of various factors such as cabin location and ticket class.
+
+Key variables in the dataset include:
+
+- Passenger Class (Pclass): Indicates the socio-economic status of the passenger, with values ranging from 1 (upper class) to 3 (lower class).
+- Sex: Gender of the passenger.
+- Age: Age of the passenger in years.
+- Fare: Passenger fare (Note: currency is assumed to be British pounds).
+
+These variables provide a detailed view of the passengers' demographics, socio-economic status, familial relationships, and travel logistics, offering a rich tapestry for analysis. For instance, it's observed that passengers from higher socio-economic classes generally had better survival rates, possibly due to their cabins' proximity to lifeboats.
+
+Interpretation of the results may be influenced by various factors, including age distribution and family presence, which can impact survival probabilities. Additionally, gaps in the dataset, notably in the 'Cabin' variable, may affect spatial analyses. Furthermore, the 'Embarked' variable, indicating the port of embarkation, may hint at economic disparities, as ticket prices and passenger classes varied with different ports.
+
+To comprehend the analysis fully, it's crucial to understand the historical context of the Titanic disaster and how the dataset reflects the socio-economic dynamics of the time. 
+
+Moving forward, the report intends to initiate the analysis by creating visualizations to compare different variables and constructing various statistical tests to uncover correlations between these variables and survival rates. By employing these methods, we aim to delve deeper into the nuances of the Titanic dataset and gain a comprehensive understanding of the factors influencing survival outcomes.
+
+
+### Analysis
+
+```{r}
+
+titanic = read.csv("titanic.csv")
+titanic_data = titanic %>%
+  filter(Fare != 0)
+
+```
+
+The analysis of the Titanic dataset begins with data preparation, including the removal of rows where the fare rate is zero to ensure the accuracy of subsequent analyses.
+
+
+Graph 1:
+
+```{r}
+fare_range = c(0, 50, 100, 150, 200, Inf)
+
+titanic_data = titanic_data %>%
+  mutate(Fare_Range = cut(Fare, breaks = fare_range, labels = c("0-50", "51-100", "101-150", "151-200", "201+"),
+                          include.lowest = TRUE))
+
+# Calculate survival rate by fare_range and pclass
+survival_rates <- titanic_data %>%
+  group_by(Fare_Range, Pclass) %>%
+  summarize(survival_rate = mean(Survived))
+
+
+
+# Plot the data
+ggplot(survival_rates, aes(x = Fare_Range, y = survival_rate, fill = factor(Pclass))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Fare Range", y = "Survival Rate", fill = "Passenger Class") +
+  ggtitle("Survival Rate by Fare Range and Passenger Class") +
+  theme_minimal()
+
+
+
+```
+
+The first graphical display illustrates survival rates on the Titanic by fare range and passenger class. It's evident that first-class passengers consistently had higher survival rates across all fare ranges. Third-class passengers, particularly in the lower fare range (0-50), experienced markedly lower survival rates compared to other classes. This graph supports the inference that socio-economic status, as indicated by passenger class and fare, significantly influenced survival outcomes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Graph 2:
+
+```{r}
+ggplot(titanic_data, aes(x = factor(Pclass), fill = factor(Survived))) +
+  geom_bar(position = "fill") +
+  labs(x = "Passenger Class", y = "Survival Rate", fill = "Survival") +
+  ggtitle("Survival Rate by Passenger Class")
+```
+
+The bar plot depicting survival rates by passenger class reinforces the observation that higher-class passengers had better chances of survival. Notably, more than half of the first-class passengers survived, whereas less than half of the third-class passengers did. This visual evidence underscores the significant role of passenger class in determining survival probabilities.
+
+
+
+
+
+
+
+Graph 3:
+
+```{r}
+ggplot(titanic_data, aes(x = factor(Pclass), fill = factor(Survived))) +
+  geom_bar(position = "fill") +
+  facet_grid(~ Sex) +
+  labs(x = "Passenger Class", y = "Survival Rate", fill = "Survival") +
+  ggtitle("Survival Rate by Passenger Class and Gender")
+
+```
+
+The faceted bar chart examining survival rates by passenger class and gender further emphasizes the impact of both factors on survival outcomes. Females consistently had higher survival rates than males across all classes, with the widest disparity observed in first and second classes. This graphical representation provides compelling evidence of the combined influence of gender and passenger class on survival probabilities.
+
+
+
+```{r, include = FALSE}
+titanic_data$Survived <- as.factor(titanic_data$Survived)
+titanic_data$Pclass <- as.factor(titanic_data$Pclass)
+
+model <- glm(Survived ~ Pclass, family = binomial(), data = titanic_data)
+
+summary(model)
+
+# Confidence intervals for the coefficients
+confint(model)
+
+```
+**Logistic Regression Analysis**
+
+**1. Description of the Analysis:**
+   The logistic regression analysis ^[https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm] aims to understand how passenger class influences the likelihood of survival among passengers on the Titanic. We've categorized passengers based on their socio-economic status (first, second, or third class) and are investigating how this factor relates to their chances of surviving the disaster. Before analysis, we ensured the data was properly formatted, with the survival status (`Survived`) and passenger class (`Pclass`) variables appropriately handled. 
+
+**2. Model Specification:**
+   Utilizing logistic regression, a statistical method tailored for binary outcomes, we're modeling the probability of survival (`Survived`) based on passenger class (`Pclass`). The model aims to quantify the impact of passenger class on survival likelihood, treating it as a categorical predictor with multiple levels.
+
+**3. Model Fitting:**
+   Employing the `glm()` function in R, we've fitted the logistic regression model to our dataset. By specifying the appropriate family (binomial) and using the Titanic dataset (`titanic_data`), we've estimated coefficients that best describe how passenger class relates to survival probabilities.
+
+**4. Results Interpretation:**
+   Examining the model summary, we gain insights into the relationship between passenger class and survival. The confidence intervals for the coefficients provide ranges of log-odds of survival associated with each passenger class.
+
+   - **Intercept (Pclass1):**
+     - The 95% confidence interval for first-class passengers (`Pclass1`) suggests they have a higher probability of survival compared to passengers in other classes. Specifically, the estimated range for log-odds of survival among first-class passengers falls between 0.317 and 0.881.
+   
+   - **Pclass2:**
+     - Passengers in the second class (`Pclass2`) are estimated to have lower survival probabilities compared to their first-class counterparts. The confidence interval suggests their log-odds of survival range between -1.050 and -0.235.
+   
+   - **Pclass3:**
+     - Among all passenger classes, those in the third class (`Pclass3`) have the lowest estimated survival probabilities. The confidence interval for third-class passengers' log-odds of survival ranges from -2.089 to -1.389.
+   
+   These findings underscore the significant influence of passenger class on survival probabilities. It's evident that socio-economic status, as represented by passenger class, played a crucial role in determining survival outcomes during the Titanic disaster. Lower-class passengers faced notably reduced chances of survival compared to their wealthier counterparts, highlighting the socio-economic disparities at play during the tragedy.
+
+
+Graph 4:
+
+```{r}
+ggplot(titanic_data, aes(x = Age, fill = Survived)) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  facet_grid(Survived ~ Pclass) +
+  scale_fill_manual(values = c("red", "green"), labels = c("Did Not Survive", "Survived")) +
+  labs(x = "Age", y = "Count", title = "Distribution of Age by Passenger Class and Survival Status") +
+  theme_minimal() +
+  theme(legend.title = element_blank(), legend.position = "top")
+
+```
+The graph is a visualization of the distribution of age by passenger class and survival status for the passengers on the Titanic. Through this visualization we can observe that passengers in third class were generally younger than passengers in first and second class. A higher proportion of children in first and second class survived than children in third class. More women and children survived than men.
+
+
+
+
+```{r, include=FALSE}
+titanic_data$Survived <- as.factor(titanic_data$Survived)
+
+model <- glm(Survived ~ Age, family = binomial(), data = titanic_data)
+
+summary(model)
+
+```
+
+
+**Logistic Regression Analysis**
+
+**1. Description of the Analysis:**
+   In this logistic regression analysis ^[https://www.analyticsvidhya.com/blog/2021/08/conceptual-understanding-of-logistic-regression-for-data-science-beginners/], we're investigating the relationship between survival outcomes (`Survived`) and passengers' ages (`Age`) on the Titanic dataset. The goal is to understand how age impacts the likelihood of survival, treating age as a continuous predictor variable. Prior to analysis, we ensured the data was properly formatted, with the `Survived` variable converted to a factor.
+
+**2. Model Specification:**
+   Logistic regression is employed to model binary outcomes, making it suitable for predicting survival probabilities in this context. The model specifies that the probability of survival (`Survived`) is dependent on passengers' ages (`Age`). We aim to estimate the impact of age on the likelihood of survival, treating it as a continuous predictor.
+
+**3. Model Fitting:**
+   The logistic regression model was fitted using the `glm()` function in R, specifying the appropriate family (binomial) and dataset (titanic_data). This function fits the logistic regression model to the data, estimating the coefficients that best describe the relationship between age and survival probabilities.
+
+**4. Results Interpretation:**
+   Analyzing the model summary provides insights into the relationship between age and survival outcomes. The coefficients indicate the strength and direction of this relationship.
+
+   - **Intercept:**
+     - The intercept represents the estimated log-odds of survival when age is zero. In this case, the intercept is estimated to be -0.062, although it's not statistically significant (p-value = 0.7202), indicating that age alone does not significantly influence the log-odds of survival.
+   
+   - **Age:**
+     - The coefficient for age is estimated to be -0.010, suggesting that for each one-unit increase in age, the log-odds of survival decrease by approximately 0.010. This coefficient is marginally significant (p-value = 0.0506), indicating a potential association between age and survival, though it should be interpreted cautiously.
+
+   The null and residual deviances provide measures of model fit, with a lower residual deviance indicating a better fit to the data. The Akaike Information Criterion (AIC) provides a measure of model goodness-of-fit, with lower values indicating better-fitting models. In this case, the AIC is 956.57.
+
+   Overall, while age shows some association with survival outcomes, as indicated by the coefficient's marginally significant p-value, its effect appears to be relatively small. Other factors not included in this analysis may have a more substantial impact on survival probabilities.
+
+**5. Conclusion:**
+   This analysis highlights the association between age and survival outcomes on the Titanic. While age shows a marginal association with survival probabilities, other factors likely play a more significant role in determining who survived the disaster. Further investigation, potentially considering interactions between age and other variables, could provide deeper insights into the dynamics of survival during the Titanic tragedy.
+
+
+
+
+
+
+
+Graph 5:
+
+```{r}
+titanic_data$Survived <- as.factor(titanic_data$Survived)
+titanic_data$Pclass <- as.factor(titanic_data$Pclass)
+titanic_data$Sex <- as.factor(titanic_data$Sex)
+
+age_summary <- titanic_data %>%
+  group_by(Pclass, Sex, Survived) %>%
+  summarize(MeanAge = mean(Age, na.rm = TRUE), .groups = 'drop')
+
+ggplot(age_summary, aes(x = Pclass, y = MeanAge, fill = Survived)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  facet_wrap(~ Sex, scales = "free_y") +
+  scale_fill_brewer(palette = "Set1", name = "Survival Status") +
+  labs(x = "Passenger Class", y = "Mean Age", title = "Mean Age by Passenger Class, Gender, and Survival Status") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+```
+
+The bar chart displays the mean age of Titanic passengers by class and survival status, separated by gender. Among females, survivors in first and second classes are on average older than those who didn't survive, while in third class, the survivors are younger. For males, first-class survivors are slightly older on average than non-survivors, but in second and third classes, the mean ages are similar regardless of survival status. This suggests age may have played a role in survival for women, particularly in lower classes, whereas for men, age differences were less pronounced with respect to survival.
+
+
+
+
+
+```{r, include = FALSE}
+titanic_data$Survived <- as.factor(titanic_data$Survived)
+titanic_data$Sex <- as.factor(titanic_data$Sex)
+
+
+model <- glm(Survived ~ Sex, family = binomial, data = titanic_data)
+
+summary(model)
+```
+
+**Logistic Regression Analysis**
+
+**1. Description of the Analysis:**
+   In this logistic regression analysis, we're examining the relationship between survival outcomes (`Survived`) and passengers' gender (`Sex`) on the Titanic dataset. The objective is to understand how gender influences the likelihood of survival, treating it as a categorical predictor variable. Before analysis, the `Survived` and `Sex` variables were appropriately converted into factors to ensure proper data handling.
+
+**2. Model Specification:**
+   Logistic regression is employed to model binary outcomes, making it suitable for predicting survival probabilities. The model specifies that the probability of survival (`Survived`) is dependent on passengers' gender (`Sex`). We aim to estimate the impact of gender on the likelihood of survival, considering it as a binary categorical predictor (male or female).
+
+**3. Model Fitting:**
+   The logistic regression model was fitted using the `glm()` function in R, specifying the appropriate family (binomial) and dataset (titanic_data). This function fits the logistic regression model to the data, estimating the coefficients that best describe the relationship between gender and survival probabilities.
+
+**4. Results Interpretation:**
+   Analysis of the model summary provides insights into the relationship between gender and survival outcomes. The coefficients indicate the strength and direction of this relationship.
+
+   - **Intercept:**
+     - The intercept represents the estimated log-odds of survival for female passengers when the gender predictor (`Sexmale`) is zero. In this case, the intercept is estimated to be 1.057, which is highly significant (p < 0.001). This suggests that, on average, female passengers have significantly higher odds of survival compared to male passengers.
+   
+   - **Sexmale:**
+     - The coefficient for male gender (`Sexmale`) is estimated to be -2.493. This coefficient represents the change in the log-odds of survival associated with being male. Its highly significant p-value (p < 0.001) indicates that gender significantly impacts survival probabilities. Male passengers are estimated to have significantly lower odds of survival compared to female passengers.
+   
+   The null and residual deviances provide measures of model fit, with a lower residual deviance indicating a better fit to the data. The Akaike Information Criterion (AIC) provides a measure of model goodness-of-fit, with lower values indicating better-fitting models. In this case, the AIC is 912.57.
+
+   Overall, this analysis demonstrates a strong association between gender and survival outcomes on the Titanic. Female passengers were significantly more likely to survive compared to male passengers, highlighting the importance of gender as a predictor of survival during the tragedy. 
+
+**5. Conclusion:**
+   Gender emerges as a crucial factor influencing survival probabilities on the Titanic. The significantly higher odds of survival observed among female passengers underscore the importance of gender disparities in determining survival outcomes during historical disasters. Further investigation into the interplay between gender and other variables could provide deeper insights into the dynamics of survival during the Titanic tragedy.
+
+
+
+Graph 6:
+
+```{r}
+titanic_data$Survived <- as.factor(titanic_data$Survived)
+titanic_data$Sex <- as.factor(titanic_data$Sex)
+
+age_summary <- titanic_data %>%
+  group_by(Sex, Survived) %>%
+  summarize(MeanAge = mean(Age, na.rm = TRUE), .groups = 'drop')
+
+ggplot(age_summary, aes(x = Sex, y = MeanAge, fill = Survived)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  scale_fill_brewer(palette = "Set1", name = "Survival Status") +
+  labs(x = "Gender", y = "Mean Age", title = "Mean Age by Gender and Survival Status") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+```
+
+The bar chart shows the mean age of Titanic passengers by gender and survival status. For both females and males, the average age of survivors is higher than that of non-survivors. It appears that, within each gender, age did not significantly disadvantage individuals’ chances of survival, but we see that females survived more than died, whereas the opposite is true for males. Also, the mean ages are quite close within each gender, but overall, the average age of male passengers, both survivors and non-survivors, is higher than that of female passengers.
+
+
+
+
+### Discussion
+
+The analysis of the Titanic dataset reveals insights into the factors influencing survival rates among its passengers. Our study aimed to unravel the intertwined narratives of passenger class, age, gender, and their roles in shaping survival outcomes on that fateful night.
+
+Firstly, our findings indicate a significant correlation between passenger class and survival rates. Both graphical visualizations and logistic regression analysis consistently demonstrate that passengers in higher classes had better chances of survival. The disparity in survival rates among classes underscores the profound impact of socio-economic status on access to life-saving resources, such as proximity to lifeboats and assistance from crew members.
+
+Secondly, age emerged as another crucial determinant of survival. While the relationship between age and survival was nuanced, our analysis revealed that younger individuals generally had higher chances of survival. This observation aligns with the historical precedent of "women and children first" in maritime disasters, where priority was given to vulnerable groups during evacuation efforts.
+
+Moreover, gender played a significant role in survival outcomes. Female passengers consistently exhibited higher survival rates across all passenger classes, highlighting the chivalrous ethos prevailing during the Titanic disaster. Men, on the other hand, faced greater odds of perishing, reflecting the sacrifice often made by male passengers to ensure the safety of women and children.
+
+Furthermore, the interaction between age, gender, and passenger class unveils complex dynamics in survival probabilities. While age did not significantly disadvantage individuals' chances of survival within each gender, disparities in survival rates between genders persisted across all age groups and passenger classes.
+
+Despite the insightful findings, several limitations need acknowledgment. Firstly, the analysis primarily relies on observational data, limiting causal inference. While statistical techniques such as logistic regression help identify associations, they cannot establish causality definitively.
+
+Secondly, the dataset's completeness and accuracy pose challenges. Missing values, particularly in the 'Age' variable, may introduce bias and affect the reliability of the analysis. Additionally, the dataset only represents a subset of Titanic passengers, potentially leading to sampling biases.
+
+Thirdly, contextual factors not captured in the dataset, such as individual behaviors, crew actions, and structural vulnerabilities, could influence survival outcomes. Incorporating qualitative data or historical accounts may provide a more comprehensive understanding of the disaster's dynamics.
+
+Moving forward, future research could explore additional variables to enrich the analysis.
+Examining the relationship between passengers' intended destinations and their survival could offer insights into the socio-economic factors that influenced decision-making and access to life-saving resources during the disaster. By understanding the distribution of survivors across different destinations, we can infer how factors such as wealth, social status, and geographic origins may have shaped survival probabilities. Expanding the scope of our analysis to include familial ties, such as whether passengers had siblings, spouses, or parents onboard, would provide a more nuanced understanding of social dynamics and support networks during the crisis. This information could help elucidate how familial relationships affected decision-making, resource allocation, and ultimately, survival probabilities. 
+
+
+New data collection efforts could significantly enhance the depth and accuracy of our analysis of Titanic survival patterns. Fortunately, we have identified a new dataset available on Kaggle ^[https://www.kaggle.com/datasets/vinicius150987/titanic3] that provides data for 1,309 passengers, offering a more comprehensive representation of the Titanic's passenger population. This expanded dataset not only increases the sample size but also includes more accurate fare prices, addressing one of the shortcomings of the original dataset. With this new dataset, we gain access to additional variables, such as passenger cabin locations and home destinations, which were not present in the original dataset. These variables could provide valuable insights into spatial factors influencing survival rates and the socio-economic backgrounds of passengers. For example, analyzing the correlation between cabin locations and survival rates could reveal whether proximity to lifeboats or other emergency resources played a role in survival outcomes.
+
+
+In summary, our analysis highlights how survival on the Titanic was influenced by a mix of factors like social class, age, and gender. It confirms the historical stories of bravery and selflessness, showing how these played out differently depending on people's backgrounds. By uncovering these details, we not only remember those who lost their lives but also learn important lessons for dealing with emergencies today.
+
+
+
+References 
