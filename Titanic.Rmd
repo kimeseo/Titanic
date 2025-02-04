@@ -1,6 +1,6 @@
----
+e---
 title: "Navigating the Relationship Between Passenger Class and Survival Rate (+Age/Gender) on the Titanic"
-authors: "Pelin, Katelyn, Elena, Kiet"
+author: "Elena Kim"
 output: html_document
 ---
 
